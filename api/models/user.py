@@ -57,8 +57,11 @@ class User(AbstractBaseUser, PermissionsMixin):
     # user account instead of its built in behavior of using the username.
     USERNAME_FIELD = 'email'
 
+    objects = UserManager()
     # Standard Python: We'll create a string representation so when
     # the class is output we'll get something meaningful.
     def __str__(self):
         """Return string representation of the user"""
         return self.email
+
+    
