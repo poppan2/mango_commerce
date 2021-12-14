@@ -3,6 +3,7 @@ from ..models.mango import Mango
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from django.shortcuts import get_object_or_404
 
 class MangoesViews(APIView):
     def post(self, request):
@@ -20,3 +21,32 @@ class MangoesViews(APIView):
         mangoes = Mango.objects.filter(owner=request.user.id)
         data = MangoSerializer(mangoes, many=True).data
         return Response(data)
+
+class MangoView(APIView):
+
+    def delete(self, request, id):
+        mango = get_object_or_404(Mango, pk=id)
+        if request.user != mango.owner:
+            raise PermissionDenied('Unauthorized, you do not own this mango')
+        mango.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    def get(self, request, id):
+        mango = get_object_or_404(Mango, pk=id)
+        if request.user != mango.owner:
+            raise PermissionDenied('Unauthorized, you do not own this mango')
+        data = MangoSerializer(mango).data
+        return Response(data)
+
+    def patch(self, request, id):
+        mango = get_object_or_404(Mango, pk=id)
+        # Check the mango's owner against the user making this request
+        if request.user != mango.owner:
+            raise PermissionDenied('Unauthorized, you do not own this mango')
+        # Ensure the owner field is set to the current user's ID
+        request.data['owner'] = request.user.id
+        updated_mango = MangoSerializer(mango, data=request.data, partial=True)
+        if updated_mango.is_valid():
+            updated_mango.save()
+            return Response(updated_mango.data)
+        return Response(updated_mango.errors, status=status.HTTP_400_BAD_REQUEST)
